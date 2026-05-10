@@ -1,0 +1,58 @@
+Metadata-Version: 2.4
+Name: autopreprocess-lite
+Version: 0.1.1
+Summary: Automatic Data Preprocessing Library
+Author: Ayush Gupta
+Author-email: guptaaayush0908@gmail.com
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: pandas>=1.3.0
+Requires-Dist: numpy>=1.21.0
+Requires-Dist: scikit-learn>=1.0.0
+Requires-Dist: joblib>=1.1.0
+Dynamic: author
+Dynamic: author-email
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+# AutoPreprocess
+
+**Automatic Data Preprocessing Library for Machine Learning**
+
+[![Python Version](https://img.shields.io/badge/python-3.8+-blue.svg)](https://python.org)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
+## ✨ Features
+
+- **Automatic column type detection** (numeric, categorical, datetime, useless)
+- **Smart missing value handling** (based on missing percentage)
+- **Outlier detection & capping** (IQR method)
+- **Intelligent encoding** (One-hot, Frequency, Target encoding)
+- **Feature scaling** (Standard, MinMax, Robust)
+- **Feature selection** (Variance, Correlation, Importance, Mutual Info)
+- **Train/Test split** (Random, Stratified, Time series)
+- **Save & load pipeline** for production deployment
+- **Zero data leakage** (fit only on training data)
+
+## 🚀 Quick Start
+
+```python
+from autopreprocess import AutoClean
+
+# One line to preprocess everything
+pipeline = AutoClean('data.csv', target='price')
+X_train, X_test, y_train, y_test = pipeline.preprocess()
+
+# For new predictions
+X_new_clean = pipeline.predict_ready_data(X_new)
+
+# Save for later
+pipeline.save('my_pipeline.pkl')
+
+# Load and use
+loaded = AutoClean.load('my_pipeline.pkl')

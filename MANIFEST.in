@@ -1,0 +1,7 @@
+include autopreprocess/*.py
+recursive-include autopreprocess *.py
+recursive-include autopreprocess/core *.py
+recursive-include autopreprocess/detectors *.py
+recursive-include autopreprocess/utils *.py
+include README.md
+include LICENSE
