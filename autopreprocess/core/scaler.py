@@ -43,7 +43,7 @@ class Scaler:
         self.params_ = {}  # {col: {'mean': x, 'std': y}} etc.
     
     def _detect_numeric_cols(self, df: pd.DataFrame) -> List[str]:
-        from detectors.type_detector import TypeDetector
+        from ..detectors.type_detector import TypeDetector
         detector = TypeDetector()
         analysis = detector.analyze_dataframe(df, verbose=False)
         
@@ -79,7 +79,10 @@ class Scaler:
             self.numeric_cols = self._detect_numeric_cols(X)
             if self.verbose:
                 print(f"   Detected numeric columns: {self.numeric_cols}")
-        
+        if not self.numeric_cols:
+            if self.verbose:
+                print("  ℹ️ No numeric columns to scale")
+            return self
         # Calculate parameters for each numeric column
         for col in self.numeric_cols:
             if col not in X.columns:
@@ -133,7 +136,9 @@ class Scaler:
             Scaled DataFrame
         """
         if not self.params_:
-            raise RuntimeError("Scaler not fitted. Call fit() first.")
+            if self.verbose:
+                print("  ℹ️ No numeric columns to transform - returning original data")
+            return X.copy()
         
         if self.verbose:
             print(f"\n🔄 TRANSFORMING DATA ({self.method})")

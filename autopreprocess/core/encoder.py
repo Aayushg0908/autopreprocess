@@ -108,7 +108,7 @@ class Encoder:
         --------
         None (updates self.categorical_cols and self.datetime_cols)
         """
-        from detectors.type_detector import TypeDetector
+        from ..detectors.type_detector import TypeDetector
         detector = TypeDetector()
         analysis = detector.analyze_dataframe(df, verbose=False)
         
