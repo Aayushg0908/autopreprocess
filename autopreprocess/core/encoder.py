@@ -353,6 +353,13 @@ class Encoder:
                 print("  → No categorical or datetime columns to encode")
             return X.copy()
         
+        # Keep columns that were not encoded (e.g. continuous numeric features)
+        encoded_cols = (set(self.freq_maps_) | set(self.onehot_categories_)
+                        | set(self.ordinal_maps_) | set(self.datetime_cols))
+        passthrough = [c for c in X.columns if c not in encoded_cols]
+        if passthrough:
+            result_dfs.insert(0, X[passthrough])
+
         # Concatenate all encoded DataFrames side-by-side
         result = pd.concat(result_dfs, axis=1)
         
