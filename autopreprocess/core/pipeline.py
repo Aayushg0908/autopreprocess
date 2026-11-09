@@ -197,6 +197,8 @@ class AutoClean:
             verbose=False
         )
         X_clean = clean_result['cleaned_data'].drop(columns=[self.target])
+        # Rows may have been removed (duplicates), so keep y aligned with X
+        y_clean = clean_result['cleaned_data'][self.target]
 
         # Remember how missing values were handled so transform() can
         # apply the same imputation to train/test/new data
@@ -246,7 +248,7 @@ class AutoClean:
                 top_k=self.top_k,
                 verbose=self.verbose
             )
-            X_scaled = self.selector_.fit_transform(X_scaled, y)
+            X_scaled = self.selector_.fit_transform(X_scaled, y_clean.loc[X_scaled.index])
             self.selected_features_ = self.selector_.selected_features_
         else:
             self.selected_features_ = list(X_scaled.columns)      

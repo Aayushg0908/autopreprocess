@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoPreprocess Studio</title>
+<style>
+  :root {
+    --bg: #f5f6fb;
+    --surface: #ffffff;
+    --surface-2: #f0f2f8;
+    --border: #e2e5ef;
+    --text: #161a2b;
+    --muted: #5d6480;
+    --accent: #5b4bff;
+    --accent-2: #00b3a4;
+    --accent-soft: #ecebff;
+    --good: #12a46b;
+    --warn: #c77700;
+    --bad: #d63c4a;
+    --shadow: 0 1px 2px rgba(22,26,43,.05), 0 8px 24px rgba(22,26,43,.06);
+    --radius: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0f1a;
+      --surface: #161927;
+      --surface-2: #1d2133;
+      --border: #2a2f45;
+      --text: #eceefa;
+      --muted: #9aa1bf;
+      --accent: #8b7dff;
+      --accent-2: #2fd3c4;
+      --accent-soft: #24214a;
+      --good: #3ccf91;
+      --warn: #f0a63a;
+      --bad: #ff6b78;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  code, pre, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #2b1f8f 0%, #5b4bff 45%, #00b3a4 100%);
+    color: #fff;
+    padding: 40px 16px 88px;
+  }
+  .hero::after {
+    content: ""; position: absolute; inset: 0;
+    background:
+      radial-gradient(600px 220px at 85% 10%, rgba(255,255,255,.18), transparent 70%),
+      radial-gradient(400px 200px at 10% 110%, rgba(255,255,255,.12), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-inner { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.3);
+    display: grid; place-items: center;
+  }
+  .brand h1 { font-size: 26px; margin: 0; letter-spacing: -.02em; }
+  .pill {
+    font-size: 12px; padding: 3px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.3);
+  }
+  .hero p { max-width: 640px; margin: 14px 0 0; color: rgba(255,255,255,.88); font-size: 16px; }
+  .hero-steps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .hero-steps span {
+    font-size: 13px; padding: 5px 12px; border-radius: 999px;
+    background: rgba(13,15,26,.22); border: 1px solid rgba(255,255,255,.2);
+  }
+
+  /* ---------- Layout ---------- */
+  .wrap {
+    max-width: 1200px; margin: -60px auto 48px; padding: 0 16px;
+    display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px;
+    position: relative; z-index: 2;
+  }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow); padding: 20px;
+  }
+  .card h2 { font-size: 16px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+  aside .card { position: sticky; top: 16px; }
+  .stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; min-width: 0; }
+  aside, .card { min-width: 0; }
+
+  /* ---------- Form ---------- */
+  .section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin: 18px 0 10px;
+  }
+  .drop {
+    display: block; border: 1.5px dashed var(--border); border-radius: 12px;
+    padding: 18px; text-align: center; cursor: pointer; background: var(--surface-2);
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop.drag { border-color: var(--accent); background: var(--accent-soft); }
+  .drop input { display: none; }
+  .drop strong { display: block; font-size: 14px; }
+  .drop small { color: var(--muted); }
+  .drop .fname { margin-top: 6px; font-size: 13px; color: var(--accent); font-weight: 600; overflow-wrap: anywhere; }
+  label.field { display: block; font-size: 13px; font-weight: 600; margin: 12px 0 6px; }
+  select, input[type=number], input[type=text] {
+    width: 100%; padding: 9px 11px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text); font: inherit; font-size: 14px;
+  }
+  select:focus, input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row input { flex: 1; accent-color: var(--accent); }
+  .range-row output { font-weight: 700; min-width: 42px; text-align: right; font-size: 14px; }
+
+  .switch {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 0; font-size: 14px; cursor: pointer;
+  }
+  .switch input { position: absolute; opacity: 0; pointer-events: none; }
+  .switch .track {
+    width: 38px; height: 22px; border-radius: 999px; background: var(--border);
+    position: relative; flex-shrink: 0; transition: background .15s;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s;
+  }
+  .switch input:checked + .track { background: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(16px); }
+  .switch input:focus-visible + .track { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .sel-opts { padding-left: 2px; }
+  .sel-opts[hidden] { display: none; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0; border-radius: 12px; padding: 12px 16px; font: inherit; font-weight: 700;
+    cursor: pointer; text-decoration: none; transition: transform .05s, filter .15s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    width: 100%; margin-top: 18px; color: #fff;
+    background: linear-gradient(135deg, var(--accent), #7a5cff 60%, var(--accent-2));
+    box-shadow: 0 6px 18px rgba(91,75,255,.35);
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost {
+    width: 100%; margin-top: 8px; background: transparent; color: var(--accent);
+    border: 1px solid var(--border); font-weight: 600;
+  }
+  .btn-ghost:hover { background: var(--accent-soft); }
+  .btn-dl {
+    background: var(--surface-2); color: var(--text); border: 1px solid var(--border);
+    font-weight: 600; font-size: 14px; padding: 10px 14px;
+  }
+  .btn-dl:hover { border-color: var(--accent); color: var(--accent); }
+  .btn[disabled] { opacity: .7; cursor: progress; }
+  .spinner {
+    width: 16px; height: 16px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+    animation: spin .8s linear infinite; display: none;
+  }
+  .loading .spinner { display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Results ---------- */
+  .alert {
+    border-radius: 12px; padding: 14px 16px; font-size: 14px;
+    background: color-mix(in srgb, var(--bad) 12%, var(--surface));
+    border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--border));
+  }
+  .alert strong { color: var(--bad); }
+  .dataset-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+  .dataset-bar .file { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .dataset-bar .meta { color: var(--muted); font-size: 14px; }
+  .tag {
+    font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); text-transform: capitalize;
+  }
+  .tag.ok { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 640px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .stat { padding: 16px; }
+  .stat .k { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .stat .v { font-size: 26px; font-weight: 800; letter-spacing: -.02em; margin-top: 4px; }
+  .stat .d { font-size: 13px; color: var(--muted); }
+
+  .flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 760px) { .flow { grid-template-columns: 1fr 1fr; } }
+  .step {
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px; background: var(--surface-2);
+    position: relative;
+  }
+  .step .n {
+    width: 22px; height: 22px; border-radius: 7px; display: grid; place-items: center;
+    background: var(--accent); color: #fff; font-size: 12px; font-weight: 800; margin-bottom: 8px;
+  }
+  .step.off { opacity: .5; }
+  .step.off .n { background: var(--muted); }
+  .step b { display: block; font-size: 14px; }
+  .step span { font-size: 12.5px; color: var(--muted); }
+
+  .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  @media (max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+  .metrics { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .metric {
+    flex: 1; min-width: 120px; border-radius: 12px; padding: 12px 14px;
+    background: linear-gradient(135deg, var(--accent-soft), transparent);
+    border: 1px solid var(--border);
+  }
+  .metric .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .metric .v { font-size: 24px; font-weight: 800; color: var(--accent); }
+  .bars { display: grid; gap: 8px; }
+  .bar-row { display: grid; grid-template-columns: minmax(0, 150px) minmax(0, 1fr) 52px; gap: 10px; align-items: center; font-size: 13px; }
+  .bar-row .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar { height: 10px; border-radius: 999px; background: var(--surface-2); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent), var(--accent-2)); }
+  .bar-row .val { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12.5px; padding: 3px 9px; border-radius: 8px; background: var(--surface-2);
+    border: 1px solid var(--border);
+  }
+  .chip.drop-chip { color: var(--bad); text-decoration: line-through; }
+  dl.kv { margin: 0; display: grid; gap: 14px; }
+  dl.kv dt { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  dl.kv dd { margin: 0; }
+  .none { color: var(--muted); font-size: 13px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { padding: 8px 12px; text-align: left; white-space: nowrap; border-bottom: 1px solid var(--border); }
+  th { background: var(--surface-2); font-weight: 700; position: sticky; top: 0; }
+  tr:last-child td { border-bottom: 0; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .miss { display: inline-block; height: 6px; border-radius: 4px; background: var(--warn); vertical-align: middle; margin-right: 6px; }
+
+  .downloads { display: flex; flex-wrap: wrap; gap: 10px; }
+  details summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+  details pre {
+    margin: 14px 0 0; max-height: 360px; overflow: auto; font-size: 12px; line-height: 1.45;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px;
+  }
+
+  .empty { text-align: center; padding: 48px 24px; }
+  .empty h2 { font-size: 22px; margin: 16px 0 6px; }
+  .empty p { color: var(--muted); max-width: 460px; margin: 0 auto; }
+  .empty-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 28px; text-align: left; }
+  @media (max-width: 640px) { .empty-steps { grid-template-columns: 1fr; } }
+  .empty-steps div { border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-2); }
+  .empty-steps b { display: block; margin: 6px 0 2px; }
+  .empty-steps span { font-size: 13px; color: var(--muted); }
+  .empty-steps .n { color: var(--accent); font-weight: 800; font-size: 13px; }
+
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 0 16px 32px; }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+      </div>
+      <h1>AutoPreprocess Studio</h1>
+      <span class="pill">autopreprocess-lite</span>
+    </div>
+    <p>Upload a CSV, pick the column you want to predict, and get clean, encoded, scaled, model-ready train and test sets in one click.</p>
+    <div class="hero-steps">
+      <span>Split</span><span>Clean</span><span>Encode</span><span>Scale</span><span>Select</span><span>Export</span>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- ================= Configuration ================= -->
+  <aside>
+    <form class="card" id="runForm" method="post" enctype="multipart/form-data">
+      <h2>Configure pipeline</h2>
+      <p class="sub">Every step is fitted on the training split only, so nothing leaks from the test set.</p>
+
+      <div class="section-label">Data</div>
+      <label class="drop" id="drop">
+        <input type="file" name="file" id="file" accept=".csv,text/csv">
+        <strong>Drop a CSV here or click to browse</strong>
+        <small>Up to 50 MB</small>
+        <div class="fname" id="fname">{% if dataset %}{% if dataset.name == "sample_houses.csv" %}Last run used the sample dataset{% else %}Last run: {{ dataset.name }} (choose it again to re-run){% endif %}{% endif %}</div>
+      </label>
+
+      <label class="field" for="target">Target column</label>
+      <select name="target" id="target">
+        {% if profile %}
+          {% for c in profile %}<option value="{{ c.name }}" {% if c.name == opts.target %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+        {% else %}
+          <option value="">Upload a CSV to choose…</option>
+        {% endif %}
+      </select>
+
+      <div class="section-label">Split</div>
+      <label class="field" for="test_size">Test size</label>
+      <div class="range-row">
+        <input type="range" id="test_size" name="test_size" min="0.05" max="0.5" step="0.05" value="{{ opts.test_size }}">
+        <output id="test_size_out">{{ (opts.test_size * 100) | round | int }}%</output>
+      </div>
+      <label class="field" for="random_state">Random seed</label>
+      <input type="number" id="random_state" name="random_state" value="{{ opts.random_state }}">
+
+      <div class="section-label">Cleaning</div>
+      {% for key, label in [('handle_missing', 'Fill missing values'), ('handle_outliers', 'Cap outliers (IQR)'), ('remove_duplicates', 'Remove duplicate rows'), ('drop_useless', 'Drop IDs & constant columns')] %}
+      <label class="switch"><span>{{ label }}</span><input type="checkbox" name="{{ key }}" {% if opts[key] %}checked{% endif %}><span class="track"></span></label>
+      {% endfor %}
+
+      <div class="section-label">Scaling</div>
+      <label class="switch"><span>Scale numeric features</span><input type="checkbox" name="scaling" id="scaling" {% if opts.scaling %}checked{% endif %}><span class="track"></span></label>
+      <select name="scaling_method" id="scaling_method" aria-label="Scaling method">
+        {% for m in scaling_methods %}<option value="{{ m }}" {% if m == opts.scaling_method %}selected{% endif %}>{{ m | capitalize }} scaler</option>{% endfor %}
+      </select>
+
+      <div class="section-label">Feature selection</div>
+      <label class="switch"><span>Select best features</span><input type="checkbox" name="feature_selection" id="feature_selection" {% if opts.feature_selection %}checked{% endif %}><span class="track"></span></label>
+      <div class="sel-opts row2" id="sel_opts" {% if not opts.feature_selection %}hidden{% endif %}>
+        <select name="selection_method" aria-label="Selection method">
+          {% for m in selection_methods %}<option value="{{ m }}" {% if m == opts.selection_method %}selected{% endif %}>{{ m | replace('_', ' ') | capitalize }}</option>{% endfor %}
+        </select>
+        <input type="number" name="top_k" min="1" placeholder="Top k (optional)" value="{{ opts.top_k }}" aria-label="Top k features">
+      </div>
+
+      <div class="section-label">Evaluate</div>
+      <label class="switch"><span>Train a quick baseline model</span><input type="checkbox" name="baseline" {% if opts.baseline %}checked{% endif %}><span class="track"></span></label>
+
+      <button class="btn btn-primary" type="submit" id="runBtn"><span class="spinner"></span><span>Run preprocessing</span></button>
+      <button class="btn btn-ghost" type="submit" name="use_sample" value="1" id="sampleBtn">Try with sample dataset</button>
+    </form>
+  </aside>
+
+  <!-- ================= Results ================= -->
+  <section class="stack">
+    {% if error %}
+      <div class="alert"><strong>Something went wrong.</strong> {{ error }}</div>
+    {% endif %}
+
+    {% if result %}
+      {% set r = result %}
+      <div class="card dataset-bar">
+        <span class="file">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          {{ dataset.name }}
+        </span>
+        <span class="meta">{{ "{:,}".format(dataset.rows) }} rows · {{ dataset.cols }} columns · {{ "{:,}".format(dataset.missing) }} missing cells · {{ dataset.duplicates }} duplicates</span>
+        <span class="tag">{{ r.problem_type }}</span>
+        <span class="tag ok">{% if r.nan_left == 0 %}No missing values left{% else %}{{ r.nan_left }} missing values left{% endif %}</span>
+      </div>
+
+      <div class="stats">
+        <div class="card stat"><div class="k">Train set</div><div class="v">{{ "{:,}".format(r.train_shape[0]) }}</div><div class="d">rows × {{ r.train_shape[1] }} features</div></div>
+        <div class="card stat"><div class="k">Test set</div><div class="v">{{ "{:,}".format(r.test_shape[0]) }}</div><div class="d">rows × {{ r.test_shape[1] }} features</div></div>
+        <div class="card stat"><div class="k">Features</div><div class="v">{{ r.features_in }} → {{ r.features_out }}</div><div class="d">input → model-ready</div></div>
+        <div class="card stat"><div class="k">Run time</div><div class="v">{{ "%.2f" | format(r.elapsed) }}s</div><div class="d">target: <span class="mono">{{ opts.target }}</span></div></div>
+      </div>
+
+      <div class="card">
+        <h2>What the pipeline did</h2>
+        <p class="sub">Steps in the order they ran.</p>
+        <div class="flow">
+          <div class="step"><div class="n">1</div><b>Split</b><span>{{ (opts.test_size * 100) | round | int }}% held out{% if r.problem_type == 'classification' %}, stratified{% endif %}</span></div>
+          <div class="step {% if not (opts.handle_missing or opts.handle_outliers or opts.remove_duplicates or opts.drop_useless) %}off{% endif %}"><div class="n">2</div><b>Clean</b><span>{{ r.dropped | length }} column{{ '' if r.dropped | length == 1 else 's' }} dropped</span></div>
+          <div class="step"><div class="n">3</div><b>Encode</b><span>{{ r.categorical | length }} categorical column{{ '' if r.categorical | length == 1 else 's' }}</span></div>
+          <div class="step {% if not opts.scaling %}off{% endif %}"><div class="n">4</div><b>Scale</b><span>{% if opts.scaling %}{{ r.scaled | length }} cols · {{ opts.scaling_method }}{% else %}Skipped{% endif %}</span></div>
+          <div class="step {% if not opts.feature_selection %}off{% endif %}"><div class="n">5</div><b>Select</b><span>{% if opts.feature_selection %}{{ opts.selection_method | replace('_', ' ') }}{% else %}Skipped{% endif %}</span></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h2>Baseline model</h2>
+          {% if r.baseline and r.baseline.error %}
+            <p class="sub">Could not train the baseline: {{ r.baseline.error }}</p>
+          {% elif r.baseline %}
+            <p class="sub">{{ r.baseline.model }} trained on the processed train set, scored on the test set.</p>
+            <div class="metrics">
+              {% for k, v in r.baseline.metrics %}<div class="metric"><div class="k">{{ k }}</div><div class="v">{{ v }}</div></div>{% endfor %}
+            </div>
+            <div class="section-label" style="margin-top:0">Top features</div>
+            <div class="bars">
+              {% for f in r.baseline.importances %}
+              <div class="bar-row"><span class="name" title="{{ f.name }}">{{ f.name }}</span><span class="bar"><i style="width: {{ '%.1f' | format(f.pct) }}%"></i></span><span class="val">{{ '%.3f' | format(f.value) }}</span></div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="sub">Turn on “Train a quick baseline model” to see how well the processed data predicts the target.</p>
+          {% endif %}
+        </div>
+
+        <div class="card">
+          <h2>Column decisions</h2>
+          <p class="sub">How columns were treated.</p>
+          <dl class="kv">
+            <div><dt>Dropped</dt><dd>{% if r.dropped %}<div class="chips">{% for c in r.dropped %}<span class="chip drop-chip">{{ c }}</span>{% endfor %}</div>{% else %}<span class="none">None</span>{% endif %}</dd></div>
+            <div><dt>Encoded as categorical</dt><dd>{% if r.categorical %}<div class="chips">{% for c in r.categorical %}<span class="chip">{{ c }}</span>{% endfor %}</div>{% else %}<span class="none">None</span>{% endif %}</dd></div>
+            <div><dt>Scaled</dt><dd>{% if r.scaled %}<div class="chips">{% for c in r.scaled %}<span class="chip">{{ c }}</span>{% endfor %}</div>{% else %}<span class="none">None</span>{% endif %}</dd></div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Download</h2>
+        <p class="sub">Processed sets include the target as the last column. The pipeline file loads with <code>AutoClean.load()</code> to transform new data.</p>
+        <div class="downloads">
+          <a class="btn btn-dl" href="{{ url_for('download', token=r.token, name='train.csv') }}">⬇ train.csv</a>
+          <a class="btn btn-dl" href="{{ url_for('download', token=r.token, name='test.csv') }}">⬇ test.csv</a>
+          <a class="btn btn-dl" href="{{ url_for('download', token=r.token, name='pipeline.pkl') }}">⬇ pipeline.pkl</a>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Processed data preview</h2>
+        <p class="sub">First {{ r.preview_rows | length }} rows of the training set.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>{% for c in r.preview_cols %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for row in r.preview_rows %}<tr>{% for v in row %}<td class="num">{{ v }}</td>{% endfor %}</tr>{% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Input column profile</h2>
+        <p class="sub">The raw data before preprocessing.</p>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Unique</th><th>Missing</th></tr></thead>
+            <tbody>
+              {% for c in profile %}
+              <tr>
+                <td>{{ c.name }}{% if c.is_target %} <span class="tag">target</span>{% endif %}</td>
+                <td class="mono">{{ c.dtype }}</td>
+                <td class="num">{{ "{:,}".format(c.unique) }}</td>
+                <td class="num">{% if c.missing %}<span class="miss" style="width: {{ [c.missing_pct * 0.6, 3] | max }}px"></span>{{ c.missing }} ({{ '%.1f' | format(c.missing_pct) }}%){% else %}–{% endif %}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <details>
+          <summary>Full pipeline log</summary>
+          <pre>{{ r.log }}</pre>
+        </details>
+      </div>
+
+    {% else %}
+      <div class="card empty">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+        <h2>Ready when you are</h2>
+        <p>Upload a CSV on the left, or try the built-in sample house-price dataset to see the whole pipeline in action.</p>
+        <div class="empty-steps">
+          <div><span class="n">01</span><b>Upload</b><span>Any CSV with a column you want to predict.</span></div>
+          <div><span class="n">02</span><b>Configure</b><span>Pick the target and tune cleaning, scaling and selection.</span></div>
+          <div><span class="n">03</span><b>Export</b><span>Download train/test sets and a reusable pipeline.</span></div>
+        </div>
+      </div>
+    {% endif %}
+  </section>
+</main>
+
+<footer>AutoPreprocess Studio · built on the <span class="mono">autopreprocess</span> library</footer>
+
+<script>
+(function () {
+  var form = document.getElementById('runForm');
+  var file = document.getElementById('file');
+  var drop = document.getElementById('drop');
+  var fname = document.getElementById('fname');
+  var target = document.getElementById('target');
+  var range = document.getElementById('test_size');
+  var out = document.getElementById('test_size_out');
+  var fs = document.getElementById('feature_selection');
+  var selOpts = document.getElementById('sel_opts');
+  var scaling = document.getElementById('scaling');
+  var scalingMethod = document.getElementById('scaling_method');
+
+  range.addEventListener('input', function () { out.textContent = Math.round(range.value * 100) + '%'; });
+  fs.addEventListener('change', function () { selOpts.hidden = !fs.checked; });
+  function syncScaling() { scalingMethod.disabled = !scaling.checked; }
+  scaling.addEventListener('change', syncScaling); syncScaling();
+
+  // Parse the CSV header row (handles quoted names) to fill the target dropdown
+  function parseHeader(line) {
+    var cols = [], cur = '', q = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') { if (q && line[i + 1] === '"') { cur += '"'; i++; } else { q = !q; } }
+      else if (ch === ',' && !q) { cols.push(cur); cur = ''; }
+      else { cur += ch; }
+    }
+    cols.push(cur);
+    return cols.map(function (c) { return c.trim(); });
+  }
+  function loadFile(f) {
+    if (!f) return;
+    fname.textContent = f.name;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var first = String(reader.result).replace(/^﻿/, '').split(/\r?\n/)[0] || '';
+      var cols = parseHeader(first).filter(Boolean);
+      var prev = target.value;
+      target.innerHTML = '';
+      cols.forEach(function (c) {
+        var o = document.createElement('option');
+        o.value = c; o.textContent = c; target.appendChild(o);
+      });
+      target.value = cols.indexOf(prev) >= 0 ? prev : cols[cols.length - 1];
+    };
+    reader.readAsText(f.slice(0, 65536));
+  }
+  file.addEventListener('change', function () { loadFile(file.files[0]); });
+  ['dragenter', 'dragover'].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('drag'); }); });
+  ['dragleave', 'drop'].forEach(function (e) { drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove('drag'); }); });
+  drop.addEventListener('drop', function (ev) {
+    if (ev.dataTransfer.files.length) { file.files = ev.dataTransfer.files; loadFile(file.files[0]); }
+  });
+
+  form.addEventListener('submit', function (ev) {
+    var sample = ev.submitter && ev.submitter.id === 'sampleBtn';
+    if (!sample && !file.files.length) {
+      ev.preventDefault();
+      fname.textContent = 'Please choose a CSV file first.';
+      return;
+    }
+    var btn = document.getElementById('runBtn');
+    btn.classList.add('loading');
+    btn.lastElementChild.textContent = sample ? 'Running on sample…' : 'Processing…';
+    setTimeout(function () { btn.disabled = true; }, 0);
+  });
+})();
+</script>
+</body>
+</html>
