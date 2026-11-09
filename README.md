@@ -37,5 +37,20 @@ pipeline.save('my_pipeline.pkl')
 
 # Load and use
 loaded = AutoClean.load('my_pipeline.pkl')
+```
+
 [![GitHub stars](https://img.shields.io/github/stars/YOUR_USERNAME/autopreprocess)](https://github.com/YOUR_USERNAME/autopreprocess/stargazers)
 [![PyPI version](https://badge.fury.io/py/autopreprocess-lite.svg)](https://pypi.org/project/autopreprocess-lite/)
+
+## 🖥️ Web UI
+
+A one-page web app (Flask + Jinja) for running the library without writing code:
+upload a CSV, pick the target, tune the cleaning/scaling/selection options, and
+download the processed train/test sets and the fitted pipeline.
+
+```bash
+pip install -r ui/requirements.txt
+python ui/app.py          # then open http://127.0.0.1:5000
+```
+
+Set `PORT` to use a different port. Click **Try with sample dataset** to see it work without your own data.

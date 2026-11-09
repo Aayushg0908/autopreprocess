@@ -197,6 +197,23 @@ class AutoClean:
             verbose=False
         )
         X_clean = clean_result['cleaned_data'].drop(columns=[self.target])
+        # Rows may have been removed (duplicates), so keep y aligned with X
+        y_clean = clean_result['cleaned_data'][self.target]
+
+        # Remember how missing values were handled so transform() can
+        # apply the same imputation to train/test/new data
+        self.fill_values_ = {}
+        self.missing_indicators_ = []
+        if self.handle_missing:
+            for col in X_clean.columns:
+                if col.endswith('_was_missing') and col[:-len('_was_missing')] in X.columns:
+                    self.missing_indicators_.append(col[:-len('_was_missing')])
+                    continue
+                if pd.api.types.is_numeric_dtype(X_clean[col]):
+                    self.fill_values_[col] = X_clean[col].median()
+                else:
+                    mode = X_clean[col].mode()
+                    self.fill_values_[col] = mode.iloc[0] if len(mode) else "Unknown"
         
         # Track dropped columns
         if 'useless_columns_dropped' in clean_result:
@@ -231,7 +248,7 @@ class AutoClean:
                 top_k=self.top_k,
                 verbose=self.verbose
             )
-            X_scaled = self.selector_.fit_transform(X_scaled, y)
+            X_scaled = self.selector_.fit_transform(X_scaled, y_clean.loc[X_scaled.index])
             self.selected_features_ = self.selector_.selected_features_
         else:
             self.selected_features_ = list(X_scaled.columns)      
@@ -269,6 +286,14 @@ class AutoClean:
         for col in self.dropped_cols_:
             if col in X_clean.columns:
                 X_clean = X_clean.drop(columns=[col])
+
+        # Apply the imputation learned during fit
+        for col in getattr(self, 'missing_indicators_', []):
+            if col in X_clean.columns:
+                X_clean[f"{col}_was_missing"] = X_clean[col].isnull().astype(int)
+        fill = {c: v for c, v in getattr(self, 'fill_values_', {}).items() if c in X_clean.columns}
+        if fill:
+            X_clean = X_clean.fillna(value=fill)
         
         # Encode
         X_encoded = self.encoder_.transform(X_clean)
